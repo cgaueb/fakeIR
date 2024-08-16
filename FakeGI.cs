@@ -65,15 +65,28 @@
  *    use_indirect_shadows: Enable shadow maps for VPLs. Default is false. 
  *    Warning, this can have a drastic impact on performance.
  *    
- *    brdf_cookie: A light cookie to use for the VPLs to modulate their angular
- *    reflectance response. It is best to use one, for a smooth light gradient. 
- *    The script comes with a symmetrical cookie, whicj works well in most cases.
+ *    automatic_weights: Compute the area-based weights of the VPLs that 
+ *    correspond to their "importance" in the computation of the indirect lighting,
+ *    automatically, amortized across N^2 frames, where N is the number of the VPLs.
+ *    This means that VPL importance will be gradually updated to match the VPL spacing
+ *    as the VPLs move within the scene. Default is false, in which case, all VPLs have 
+ *    the same weight. 
  *    
  *    distance_scale: It is the divisor to adjust units to meters. It adjust the 
  *    reflected light brightness, due to distance attenuaton. If geometry is in 
  *    meters, set the  distance scale to 1 (default). If, for example, distances 
  *    are in feet, set distance scale to ~3. If units are in dm, set scale to 10 
  *    and so on.
+ *
+ *    avg_refl: Average albedo of the surfaces to use for the secondary bounce, 
+ *    if enabled. Default value is 0.4.
+ *
+ *    avg_secondary_distance: is the distance to place the secondary bounce phantom
+ *    VPL away from the cluster of contributing static VPLs
+ *
+ *    brdf_cookie: A light cookie to use for the VPLs to modulate their angular
+ *    reflectance response. It is best to use one, for a smooth light gradient. 
+ *    The script comes with a symmetrical cookie, whicj works well in most cases.
  *    
  *    For more details about the operation of the method, please see the paper.
  */
@@ -91,7 +104,8 @@ public class FakeGI : MonoBehaviour
     public bool automatic_weights = false;
     public float distance_scale = 1.0f;
     public float avg_refl = 0.4f; // average environment reflectance
-    public float avg_secondary_distance = 1.0f; // average environment reflectance
+    public float avg_secondary_distance = 1.0f; // distance to place 
+	                                            // the phantom secondary bounce VPL
     public Texture brdf_cookie = null;
 
     protected List<Light> lights = new List<Light>();
