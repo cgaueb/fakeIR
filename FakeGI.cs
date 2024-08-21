@@ -109,6 +109,7 @@ public class FakeGI : MonoBehaviour
     public Texture brdf_cookie = null;
 
     protected List<Light> lights = new List<Light>();
+    protected List<Color> reflectance = new List<Color>();
     protected List<float> weights = new List<float>();
     protected List<Light> blockers = new List<Light>();
     protected bool is_directional = false;
@@ -215,15 +216,13 @@ public class FakeGI : MonoBehaviour
                 l.intensity = 0.0f;
                 l.enabled = false;
                 lights.Add(l);
-                
-                //light_pos.Add(group.transform.GetChild(i).gameObject.transform.position);
+                reflectance.Add(l.color);
                 
                 // set up indirect shadows (of any)
                 if (use_indirect_shadows)
                 {
                     l.shadows = LightShadows.Soft;
                     l.shadowCustomResolution = 32;
-                    // l.shadowRadius = 0.2f;
                 }
                 else
                     l.shadows = LightShadows.None;
@@ -325,6 +324,7 @@ public class FakeGI : MonoBehaviour
         Vector3 dir = FL.forward;
         Vector3 pos = FL.position;
         float source_intensity = source.intensity;
+        Color source_color = source.color;
 
         // Ray casting case
         if (use_raycasting)
@@ -371,7 +371,7 @@ public class FakeGI : MonoBehaviour
                 
                 w_total += w;
             }
-            dynamic_vpl.color /= w_total;
+            dynamic_vpl.color = dynamic_vpl.color * source_color / w_total;
             area_factor /= w_total;
             vpl_normal = Vector3.Normalize(vpl_normal);
             dynamic_vpl.transform.forward = vpl_normal;
@@ -441,8 +441,7 @@ public class FakeGI : MonoBehaviour
             if (blockers.Count > 0)
             {
                 Vector3 endpoint = is_directional ? light_pos - 100.0f * to_vpl_normalized : pos;
-                Color color = new Color(1.0f, 0, 1.0f);
-                Debug.DrawLine(endpoint, light_pos, color);
+                
                 for (int j = 0; j < blockers.Count; j++)
                 {
                     float dist_to_blocker = PointToSegmentDistanceSquared(blockers[j].transform.position, endpoint, light_pos);
@@ -450,17 +449,6 @@ public class FakeGI : MonoBehaviour
                     float filter = MathF.Min(1.0f, dist_to_blocker / (0.0001f + range * range));
                     intensity *= filter;
                 }
-            }
-
-            // update secondary bounce phantom light values (if enabled)
-            if (secondary_bounce)
-            {
-                float w = intensity / source_intensity;
-                sec_intensity += w * avg_refl * intensity;
-                sec_color += w * lights[i].color;
-                sec_pos += w * light_pos;
-                sec_dir -= w * lights[i].transform.forward;
-                sec_weight += w+0.001f;
             }
 
             // cull insignificant VPLs
@@ -472,7 +460,20 @@ public class FakeGI : MonoBehaviour
             {
                 lights[i].enabled = true;
                 lights[i].intensity = intensity;
+                lights[i].color = source_color * reflectance[i];
             }
+
+            // update secondary bounce phantom light values (if enabled)
+            if (secondary_bounce)
+            {
+                float w = intensity / source_intensity;
+                sec_intensity += w * avg_refl * intensity;
+                sec_color += w * lights[i].color;
+                sec_pos += w * light_pos;
+                sec_dir -= w * lights[i].transform.forward;
+                sec_weight += w + 0.001f;
+            }
+
         } // for all VPLs
 
         // update secondary bounce phantom light values (if enabled)
