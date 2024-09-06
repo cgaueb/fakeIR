@@ -114,7 +114,11 @@ public class FakeGI : MonoBehaviour
     protected List<Light> blockers = new List<Light>();
     protected bool is_directional = false;
     protected bool is_spot = false;
-    
+
+    // smoothing parameters
+    bool smooth = true;
+    protected Vector3 old_vpl_pos;
+    protected Vector3 old_vpl_normal;
 
     Light source;
 
@@ -191,21 +195,24 @@ public class FakeGI : MonoBehaviour
         // search for all VPLS groups in the scene, not just one.
         foreach (GameObject group in Resources.FindObjectsOfTypeAll(typeof(GameObject)) as GameObject[])
         {
-            if (group.name != "VPLS")
+            if (group.name != "VPLS" || !group.activeInHierarchy)
                 continue;
             
             // fetch all children and keep only lights
             for (int i = 0; i < group.transform.childCount; i++)
             {
                 Light l = group.transform.GetChild(i).gameObject.GetComponent<Light>();
+                
                 if (l == null)
                     continue;
 
+                
                 // set up emission characteristics of VPLs
                 if (l.type == LightType.Spot)
                 {
                     l.innerSpotAngle = 0;
                     l.spotAngle = 170;
+                    l.range = source.range;
 
                 }
                 
@@ -289,12 +296,16 @@ public class FakeGI : MonoBehaviour
             dynamic_vpl.cookie = brdf_cookie;
             dynamic_vpl_go.name = "DynamicVPL";
 
+            old_vpl_normal = -source.transform.forward;
+            old_vpl_pos = new Vector3(0, 0, 0);
+
             // set up indirect shadows via a low-res shadow map
             if (use_indirect_shadows)
             {
                 dynamic_vpl.shadows = LightShadows.Soft;
-                dynamic_vpl.shadowCustomResolution = 128;
-                dynamic_vpl.shadowRadius = 0.2f;
+                dynamic_vpl.shadowCustomResolution = 64;
+                dynamic_vpl.shadowBias = 0.03f;
+                dynamic_vpl.shadowStrength = 0.5f;
             }
             else
                 dynamic_vpl.shadows = LightShadows.None;
@@ -312,6 +323,7 @@ public class FakeGI : MonoBehaviour
             dynamic_vpl_secondary.spotAngle = 160;
             dynamic_vpl_secondary.cookie = brdf_cookie;
             dynamic_vpl_go_secondary.name = "DynamicVPL-secondary";
+            dynamic_vpl_secondary.range = source.range;
         }
     }
 
@@ -342,7 +354,14 @@ public class FakeGI : MonoBehaviour
             float intensity = source_intensity / (0.1f + dist*dist);
 
             // Adjust phantom VPL
-            Vector3 dvpl_pos = hit.point;
+            
+
+            // if using phantom VPL position smoothing:
+            if (old_vpl_pos.magnitude == 0.0)
+                old_vpl_pos = hit.point;
+            Vector3 dvpl_pos = smooth ? 0.5f*(hit.point + old_vpl_pos): hit.point;
+            old_vpl_pos = dvpl_pos;
+
             dynamic_vpl.transform.position = dvpl_pos + dir * 0.6f;
             dynamic_vpl.color = new Color(0, 0, 0);
 
@@ -374,7 +393,8 @@ public class FakeGI : MonoBehaviour
             dynamic_vpl.color = dynamic_vpl.color * source_color / w_total;
             area_factor /= w_total;
             vpl_normal = Vector3.Normalize(vpl_normal);
-            dynamic_vpl.transform.forward = vpl_normal;
+            dynamic_vpl.transform.forward = smooth?0.5f*(old_vpl_normal+vpl_normal):vpl_normal;
+            old_vpl_normal = vpl_normal;
 
             dynamic_vpl.enabled = true;
             float cos_theta_i = MathF.Max(Vector3.Dot(vpl_normal, -dir), 0.0f);
@@ -389,9 +409,9 @@ public class FakeGI : MonoBehaviour
                 dist = (0.5f*prim_distance + hit.distance)/distance_scale;
                 float sec_int = avg_refl * intensity / (1.0f + dist*dist);
                 dynamic_vpl_secondary.color = dynamic_vpl.color;
-                dynamic_vpl_secondary.transform.LookAt(-vpl_normal);
+                dynamic_vpl_secondary.transform.forward= -vpl_normal;
                 // set the phantom secondary bounce light behind the emitter
-                Vector3 dvpl_pos_sec = hit.point - hit.distance * 1.5f * dir;
+                Vector3 dvpl_pos_sec = dvpl_pos - hit.distance * 1.5f * dir;
                 dynamic_vpl_secondary.transform.position = dvpl_pos_sec;
                 dynamic_vpl_secondary.enabled = true;
                 dynamic_vpl_secondary.intensity = sec_int;
