@@ -1,6 +1,6 @@
 /** 
  * Unity script for implementing fake GI effects, based on the article:
- * G. Papaioannou, Fake Dynamic Global Illumination for VR, [DETAILS MISSING]
+ * G. Papaioannou, Approximate Dynamic Global Illumination for VR, submitted to Springer Virtual Reality
  * 
  * Author: Georgios Papaioannou
  * 
