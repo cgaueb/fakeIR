@@ -101,3 +101,7 @@ are removed after VPL generation and the original state of the Game Objects is r
 Finally, to move the VPLs inside the geometry so that their emission lobes properly coincide 
 with the geometry boundaries, a user-defiend negative **VPL offset** is provided (default value is 0).
 
+## How to install the VPL generator script
+The generator script is a Unity editor script and must be placed within an "Editor" folder in your project assets. When
+compiled by Unity, it will appear as a separate entry in a top-level menu in the editor window.
+
