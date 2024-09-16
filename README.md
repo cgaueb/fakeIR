@@ -73,3 +73,31 @@ MIT License
     
  For more details about the operation of the method, please see the paper.
  
+## Static VPL generator script
+![VPL generator](https://raw.githubusercontent.com/cgaueb/fakeIR/main/vpl-generator.jpg)
+
+A Unity editor script is included for automatically placing static VPLs in the scene.
+The generator traces paths in the scene, starting from a reference object location (indicated 
+by the user) and populates a new "VPLS" group with VPLs, each time the **Generate VPLs** button is pressed. 
+Multiple "VPLS" groups can be added, using the same or a different object, or moving the reference object
+(e.g. a camera) within the scene.
+
+A random permutation of the initial starting position is done in the 
+empty space, by tracing "feeler" rays and moving the sampling location along them. From this 
+location, paths are traced and VPLs are generated on the hit points. The length of the paths 
+is controlled by a **max trace level** parameter. 
+
+The number of VPLs is controlled by two parameters: the **intended VPL spacing**, which defines 
+the granularity of the VPL sites, and a **maximum number of VPLs** for limiting the population
+of the VPLs to a user-defined number. VPL positions are hashed and checked for overlap according
+to directional and spatial congruity, based on the spacing parameter. Colliding VPLs are clustered
+together by averaging. 
+
+VPLs are by default traced according to collider geometry, if any. However, one can toggle the **use
+mesh collisions** option, to force the temporary creation of mesh colliders for all geometric entities
+that do not already have one and perform intersections with these, instead. The new MeshColliders 
+are removed after VPL generation and the original state of the Game Objects is restored. 
+
+Finally, to move the VPLs inside the geometry so that their emission lobes properly coincide 
+with the geometry boundaries, a user-defiend negative **VPL offset** is provided (default value is 0).
+
