@@ -4,7 +4,7 @@
 
 Unity script for implementing fake GI effects using fast instant radiosity with static VPLs, 
 based on the article:
-G. Papaioannou, Approximate Dynamic Global Illumination for VR, submitted to Springer Virtual Reality.
+G. Papaioannou, Approximate Dynamic Global Illumination for VR, Virtual Reality 29, 54 (2025). https://doi.org/10.1007/s10055-025-01114-3.
 
 Author: Georgios Papaioannou
 Copyright 2024 Georgios Papaioannou
